@@ -1,0 +1,14 @@
+{
+    "nrg_bal_total_consumption": ["FC_E"],
+    "nrg_bal_consumption_basic": ["FC_IND_E","FC_TRA_E","FC_OTH_E"],
+    "nrg_bal_consumption_industry_full": [
+        "FC_IND_CON_E","FC_IND_CPC_E","FC_IND_FBT_E","FC_IND_IS_E","FC_IND_MAC_E","FC_IND_MQ_E",
+        "FC_IND_NFM_E","FC_IND_NMM_E","FC_IND_NSP_E","FC_IND_PPP_E","FC_IND_TE_E","FC_IND_TL_E","FC_IND_WP_E"],
+    "nrg_bal_consumption_other_full": ["FC_OTH_AF_E", "FC_OTH_CP_E", "FC_OTH_FISH_E", "FC_OTH_HH_E", "FC_OTH_NSP_E"],
+    "nrg_bal_consumption_transport_full": ["FC_TRA_DAVI_E", "FC_TRA_DNAVI_E", "FC_TRA_NSP_E", "FC_TRA_PIPE_E",
+                                           "FC_TRA_RAIL_E", "FC_TRA_ROAD_E"],
+    "nrg_bal_siec_total": ["TOTAL"],
+    "nrg_bal_siec_basic":[
+    "P1000", "S2000", "G3000", "E7000", "H8000"],
+    "all_countries": ["BE", "BG", "CZ", "DK", "DE", "EE", "IE", "EL", "ES", "FR", "FX", "HR", "IT", "CY", "LV", "LT", "LU", "HU", "MT", "NL", "AT", "PL", "PT", "RO", "SI", "SK", "FI", "SE", "IS", "LI", "NO", "CH", "UK", "BA", "ME", "MD", "MK", "GE", "AL", "RS", "TR", "UA", "XK", "AD", "BY", "MC", "RU", "SM", "AM", "AZ"]
+}
