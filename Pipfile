@@ -1,0 +1,15 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+notebook = "*"
+sdmxthon = "*"
+pysdmx = {file = "pysdmx-1.0.0rc7-py3-none-any.whl"}
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"
+python_full_version = "3.11.0"
