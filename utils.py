@@ -25,18 +25,18 @@ def get_data_url(resource_id, data_selection=None, start_period=None, end_period
 
     return f'https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1/data/{resource_id}/{data_selection}?format=SDMX-CSV{start_period}{end_period}'
 
-def get_eurostat_dataset(resource_id, data_selection=None, start_period=None, end_period=None):
-    metadata = read_sdmx(get_metadata_url(resource_id))
-    data = read_sdmx(get_data_url(resource_id, data_selection, start_period, end_period))
+# def get_eurostat_dataset(resource_id, data_selection=None, start_period=None, end_period=None):
+#     metadata = read_sdmx(get_metadata_url(resource_id))
+#     data = read_sdmx(get_data_url(resource_id, data_selection, start_period, end_period))
     
-    metadata = metadata.get_dataflows()
-    metadata = metadata[list(metadata.keys())[0]]
+#     metadata = metadata.get_dataflows()
+#     metadata = metadata[list(metadata.keys())[0]]
 
-    dataset = data.get_datasets()[0]
+#     dataset = data.get_datasets()[0]
 
-    dataset.structure = metadata
+#     dataset.structure = metadata
     
-    return dataset   
+#     return dataset   
 
 def get_dimensions(metadata):
 
@@ -85,7 +85,7 @@ def get_summary_dataset(dataset):
     summary = {}
     summary['structure_type'] = dataset.structure.__class__.__name__
     summary['structure_id'] = dataset.structure.id
-    summary['structure_name'] = dataset.structure.name
+    # summary['structure_name'] = dataset.structure.name
     
     if summary['structure_type'] == 'Dataflow':
         dsd = dataset.structure.structure
