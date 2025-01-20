@@ -2,7 +2,7 @@ from pysdmx.api.qb.service import RestService
 from pysdmx.api.qb.structure import StructureQuery, StructureFormat, StructureType, StructureReference, StructureDetail
 from pysdmx.api.qb.data import DataQuery, DataFormat
 from pysdmx.api.qb.util import ApiVersion
-from pysdmx.io import read_sdmx, get_datasets
+from pysdmx.io import get_datasets
 
 import pandas as pd
 
@@ -21,12 +21,6 @@ def get_metadata_url(resource_id):
     query = StructureQuery(resource_id= resource_id, artefact_type= StructureType.DATAFLOW, references=StructureReference.DESCENDANTS, detail=StructureDetail.FULL)
     return api_endpoint + query.get_url(ApiVersion.V1_4_0)
 
-def get_data_url2(resource_id, data_selection='', last_n_obs=None):
-    query = DataQuery(resource_id= resource_id,agency_id='ESTAT',
-                      last_n_obs= last_n_obs, key=data_selection)
-    return api_endpoint + query.get_url(ApiVersion.V1_4_0)
-
-
 def get_data_url(resource_id, data_selection=None,
                  start_period=None, end_period=None,
                  last_n_obs=None):
@@ -36,8 +30,8 @@ def get_data_url(resource_id, data_selection=None,
     end_period = f'&endPeriod={end_period}' if end_period else ''
     last_n_obs = f'&lastNObservations={last_n_obs}' if last_n_obs else ''
 
-
     return f'https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1/data/{resource_id}/{data_selection}?format=SDMX-CSV{start_period}{end_period}{last_n_obs}'
+
 
 def get_dimensions(metadata):
 
@@ -141,6 +135,7 @@ def build_data_selection(selection_dict):
 
     return result[:-1]
 
+
 def get_labels_df(dataset, dim):
     result = []
     if dataset.structure.__class__.__name__ == 'Dataflow':
@@ -151,12 +146,48 @@ def get_labels_df(dataset, dim):
         if component.id == dim:
             if component.enumeration is not None:
                 for code in component.enumeration.codes:
-                    result.append({'id': code.id, 'name': code.name})
+                    result.append({
+                        'id': code.id,
+                        'name': code.name})
 
             break 
     return pd.DataFrame(result)
 
+
 def add_labels(dataset, dim):
     labels = get_labels_df(dataset, dim)
-    dataset.data = dataset.data.merge(labels, left_on=dim, right_on='id').drop(columns=['id']).rename(columns={'name': f'{dim}_label'})
+    dataset.data = dataset.data.\
+        merge(labels, left_on=dim, right_on='id').\
+        drop(columns=['id']).\
+            rename(columns={'name': f'{dim}_label'})
     return dataset
+
+
+def get_dataset_with_selection(dataset_id, selection_dict):
+
+    data_selection = build_data_selection(selection_dict)
+    data_url = get_data_url(dataset_id, data_selection=data_selection, start_period=2000)
+    metadata_url = get_metadata_url(dataset_id)
+
+    dataset = get_datasets(data_url, metadata_url, validate=False)[0]
+    dataset.data.TIME_PERIOD = dataset.data.TIME_PERIOD.astype(int)
+    dataset.data.OBS_VALUE = dataset.data.OBS_VALUE.astype(float)
+
+    return dataset
+
+def compare_aggregates(dataset_id, constraints_1, constraints_2, group_by='TIME_PERIOD', threshold=5):
+    ds1 = get_dataset_with_selection(dataset_id, constraints_1)
+    ds2 = get_dataset_with_selection(dataset_id, constraints_2)
+
+    ds1_agg = ds1.data.groupby(group_by)['OBS_VALUE'].sum().reset_index()
+    ds2_agg = ds2.data.groupby(group_by)['OBS_VALUE'].sum().reset_index()
+
+    merged = ds1_agg.merge(ds2_agg, on=group_by, suffixes=('_1', '_2'))
+    merged['check'] = abs(merged['OBS_VALUE_1'] - merged['OBS_VALUE_2']) < threshold
+    merged = merged[~merged['check']]
+    merged['imbalance'] = abs(merged['OBS_VALUE_1'] - merged['OBS_VALUE_2'])
+    merged['imbalance_ratio'] = round(merged['imbalance'] / merged['OBS_VALUE_1'], 4)
+
+    return merged
+
+#Add methods to check density and to check whether a total = sum(subtotals)
