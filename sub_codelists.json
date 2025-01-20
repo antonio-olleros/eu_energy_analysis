@@ -8,7 +8,6 @@
     "nrg_bal_consumption_transport_full": ["FC_TRA_DAVI_E", "FC_TRA_DNAVI_E", "FC_TRA_NSP_E", "FC_TRA_PIPE_E",
                                            "FC_TRA_RAIL_E", "FC_TRA_ROAD_E"],
     "nrg_bal_siec_total": ["TOTAL"],
-    "nrg_bal_siec_basic":[
-    "P1000", "S2000", "G3000", "E7000", "H8000"],
-    "all_countries": ["BE", "BG", "CZ", "DK", "DE", "EE", "IE", "EL", "ES", "FR", "FX", "HR", "IT", "CY", "LV", "LT", "LU", "HU", "MT", "NL", "AT", "PL", "PT", "RO", "SI", "SK", "FI", "SE", "IS", "LI", "NO", "CH", "UK", "BA", "ME", "MD", "MK", "GE", "AL", "RS", "TR", "UA", "XK", "AD", "BY", "MC", "RU", "SM", "AM", "AZ"]
+    "nrg_bal_siec_basic":["C0000X0350-0370", "C0350-0370", "P1000", "S2000", "G3000", "O4000XBIO", "RA000", "W6100_6220", "N900H", "E7000", "H8000"],
+    "all_countries": ["BE", "BG", "CZ", "DK", "DE", "EE", "IE", "EL", "ES", "FR", "HR", "IT", "CY", "LV", "LT", "LU", "HU", "MT", "NL", "AT", "PL", "PT", "RO", "SI", "SK", "FI", "SE", "IS", "NO", "UK", "BA", "ME", "MD", "MK", "GE", "AL", "RS", "TR", "UA", "XK"]
 }

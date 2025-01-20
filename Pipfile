@@ -6,11 +6,11 @@ name = "pypi"
 [packages]
 notebook = "*"
 sdmxthon = "*"
-pysdmx = {file = "pysdmx-1.0.0rc8-py3-none-any.whl"}
 matplotlib = "*"
+plotly = "*"
+pysdmx = "==1.0.0"
 
 [dev-packages]
 
 [requires]
 python_version = "3.11"
-python_full_version = "3.11.0"
