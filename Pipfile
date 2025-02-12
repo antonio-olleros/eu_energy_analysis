@@ -8,7 +8,7 @@ notebook = "*"
 sdmxthon = "*"
 matplotlib = "*"
 plotly = "*"
-pysdmx = "==1.0.0"
+pysdmx = {extras = ["all"], version = "*"}
 
 [dev-packages]
 
