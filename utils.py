@@ -168,6 +168,8 @@ def get_dataset_with_selection(dataset_id, selection_dict):
     data_selection = build_data_selection(selection_dict)
     data_url = get_data_url(dataset_id, data_selection=data_selection, start_period=2000)
     metadata_url = get_metadata_url(dataset_id)
+    print(f'data_url: {data_url}')
+    print(f'metadata_url: {metadata_url}')
 
     dataset = get_datasets(data_url, metadata_url, validate=False)[0]
     dataset.data.TIME_PERIOD = dataset.data.TIME_PERIOD.astype(int)
