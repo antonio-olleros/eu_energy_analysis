@@ -7,8 +7,8 @@ from pysdmx.io import get_datasets
 import pandas as pd
 
 
-api_endpoint='https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1'
-
+api_endpoint_estat='https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1'
+api_endpoint_ecb='https://data-api.ecb.europa.eu/service'
 
 def get_estat_webservice():
     return RestService(
@@ -17,20 +17,36 @@ def get_estat_webservice():
         structure_format= StructureFormat.SDMX_ML_2_1
         )
 
-def get_metadata_url(resource_id):
+def get_ecb_webservice():
+    return RestService(
+        api_endpoint='https://data-api.ecb.europa.eu/service/',
+        api_version= ApiVersion.V1_4_0,
+        structure_format= StructureFormat.SDMX_ML_2_1
+        )
+
+def get_metadata_url(resource_id, agency='estat'):
     query = StructureQuery(resource_id= resource_id, artefact_type= StructureType.DATAFLOW, references=StructureReference.DESCENDANTS, detail=StructureDetail.FULL)
-    return api_endpoint + query.get_url(ApiVersion.V1_4_0)
+    if agency == 'estat':
+        return api_endpoint_estat + query.get_url(ApiVersion.V1_4_0)
+    elif agency == 'ecb':
+        return api_endpoint_ecb + query.get_url(ApiVersion.V1_4_0)
+    else:
+        raise ValueError(f"Invalid agency: {agency}")
 
 def get_data_url(resource_id, data_selection=None,
                  start_period=None, end_period=None,
-                 last_n_obs=None):
-    
+                 last_n_obs=None, agency='estat'):
     data_selection = data_selection or 'all'
     start_period = f'&startPeriod={start_period}' if start_period else ''
     end_period = f'&endPeriod={end_period}' if end_period else ''
     last_n_obs = f'&lastNObservations={last_n_obs}' if last_n_obs else ''
 
-    return f'https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1/data/{resource_id}/{data_selection}?format=SDMX-CSV{start_period}{end_period}{last_n_obs}'
+    if agency == 'estat':
+        return f'{api_endpoint_estat}/data/{resource_id}/{data_selection}?format=SDMX-CSV{start_period}{end_period}{last_n_obs}'
+    elif agency == 'ecb':
+        return f'{api_endpoint_ecb}/data/{resource_id}/{data_selection}?{start_period}{end_period}{last_n_obs}'
+    else:
+        raise ValueError(f"Invalid agency: {agency}")
 
 
 def get_dimensions(metadata):
@@ -76,14 +92,15 @@ def get_summary_metadata(metadata):
     summary['dimensions'] = dimension_details
     return summary
 
-def get_summary_dataset(dataset_id):       
 
-    print(f'data query: {get_data_url(dataset_id, last_n_obs=1)}')
-    print(f'metadata query: {get_metadata_url(dataset_id)}')
+def get_summary_dataset(dataset_id, agency='estat'):       
+
+    print(f'data query: {get_data_url(dataset_id, last_n_obs=1, agency=agency)}')
+    print(f'metadata query: {get_metadata_url(dataset_id, agency=agency)}')
 
     dataset = get_datasets(
-        data= get_data_url(dataset_id, last_n_obs=1),
-        structure=get_metadata_url(dataset_id), validate=False)[0]
+        data= get_data_url(dataset_id, last_n_obs=1, agency=agency),
+        structure=get_metadata_url(dataset_id, agency=agency), validate=False)[0]
 
     summary = {}
     summary['structure_type'] = dataset.structure.__class__.__name__
@@ -163,23 +180,34 @@ def add_labels(dataset, dim):
     return dataset
 
 
-def get_dataset_with_selection(dataset_id, selection_dict):
+def get_dataset_with_selection(dataset_id, selection_dict, agency='estat'):
 
     data_selection = build_data_selection(selection_dict)
-    data_url = get_data_url(dataset_id, data_selection=data_selection, start_period=2000)
-    metadata_url = get_metadata_url(dataset_id)
+    data_url = get_data_url(dataset_id, data_selection=data_selection, start_period=2000, agency=agency)
+    metadata_url = get_metadata_url(dataset_id, agency=agency)
     print(f'data_url: {data_url}')
     print(f'metadata_url: {metadata_url}')
 
     dataset = get_datasets(data_url, metadata_url, validate=False)[0]
-    dataset.data.TIME_PERIOD = dataset.data.TIME_PERIOD.astype(int)
-    dataset.data.OBS_VALUE = dataset.data.OBS_VALUE.astype(float)
+    if 'TIME_PERIOD' in dataset.data.columns:
+        try:
+            dataset.data.TIME_PERIOD = dataset.data.TIME_PERIOD.astype(int)
+        except:
+            print(f'TIME_PERIOD is not an integer for {dataset_id}')
+    elif 'ObsDimension' in dataset.data.columns:
+        dataset.data['TIME_PERIOD'] = dataset.data.ObsDimension.astype(int)
+        dataset.data = dataset.data.drop(columns=['ObsDimension'])
+    if 'OBS_VALUE' in dataset.data.columns:
+        dataset.data.OBS_VALUE = dataset.data.OBS_VALUE.astype(float)
+    elif 'obsValue' in dataset.data.columns:
+        dataset.data['OBS_VALUE'] = dataset.data.obsValue.astype(float)
+        dataset.data = dataset.data.drop(columns=['obsValue'])
 
     return dataset
 
-def compare_aggregates(dataset_id, constraints_1, constraints_2, group_by='TIME_PERIOD', threshold=5):
-    ds1 = get_dataset_with_selection(dataset_id, constraints_1)
-    ds2 = get_dataset_with_selection(dataset_id, constraints_2)
+def compare_aggregates(dataset_id, constraints_1, constraints_2, group_by='TIME_PERIOD', threshold=5, agency='estat'):
+    ds1 = get_dataset_with_selection(dataset_id, constraints_1, agency=agency)
+    ds2 = get_dataset_with_selection(dataset_id, constraints_2, agency=agency)
 
     ds1_agg = ds1.data.groupby(group_by)['OBS_VALUE'].sum().reset_index()
     ds2_agg = ds2.data.groupby(group_by)['OBS_VALUE'].sum().reset_index()
