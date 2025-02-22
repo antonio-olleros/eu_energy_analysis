@@ -1,8 +1,12 @@
+import itertools
+
 from pysdmx.api.qb.service import RestService
 from pysdmx.api.qb.structure import StructureQuery, StructureFormat, StructureType, StructureReference, StructureDetail
 from pysdmx.api.qb.data import DataQuery, DataFormat
 from pysdmx.api.qb.util import ApiVersion
 from pysdmx.io import get_datasets
+from pysdmx.model.dataflow import Role
+
 
 import pandas as pd
 
@@ -199,9 +203,9 @@ def get_dataset_with_selection(dataset_id, selection_dict, agency='estat'):
         dataset.data = dataset.data.drop(columns=['ObsDimension'])
     if 'OBS_VALUE' in dataset.data.columns:
         dataset.data.OBS_VALUE = dataset.data.OBS_VALUE.astype(float)
-    elif 'obsValue' in dataset.data.columns:
-        dataset.data['OBS_VALUE'] = dataset.data.obsValue.astype(float)
-        dataset.data = dataset.data.drop(columns=['obsValue'])
+    elif 'OBSVALUE' in dataset.data.columns:
+        dataset.data['OBS_VALUE'] = dataset.data.OBSVALUE.astype(float)
+        dataset.data = dataset.data.drop(columns=['OBSVALUE'])
 
     return dataset
 
@@ -220,4 +224,62 @@ def compare_aggregates(dataset_id, constraints_1, constraints_2, group_by='TIME_
 
     return merged
 
-#Add methods to check density and to check whether a total = sum(subtotals)
+def check_density(dataset, geo="geo"):
+    result = {}
+    dimensions = {}
+    combinations = 1
+    combinations_ex_geo = 1
+    dimension_values = {}
+    for component in dataset.structure.components:
+        if component.role == Role.DIMENSION:
+            if component.id != "TIME_PERIOD":
+                dimensions[component.id] = 0
+
+    for dimension in dimensions.keys():
+        if dimension in dataset.data.columns:
+            dimensions[dimension] = len(dataset.data[dimension].unique())
+            combinations = combinations * len(dataset.data[dimension].unique())
+            if dimension != geo:
+                combinations_ex_geo = combinations_ex_geo * len(dataset.data[dimension].unique())
+                dimension_values[dimension] = list(dataset.data[dimension].unique())
+
+    result["combinations"] = combinations
+    result["combinations_ex_geo"] = combinations_ex_geo
+    
+    
+    datapoints_by_period = dataset.data.groupby("TIME_PERIOD")["OBS_VALUE"].size()
+    max_datapoints_by_period = int(datapoints_by_period.max())
+
+    datapoints_by_period_and_geo = dataset.data.groupby(["TIME_PERIOD", geo])["OBS_VALUE"].size()
+    max_datapoints_by_period_and_geo = int(datapoints_by_period_and_geo.max())
+
+    result["max_datapoints_by_period"] = max_datapoints_by_period
+    result["max_datapoints_by_period_and_geo"] = max_datapoints_by_period_and_geo
+    result["density"] = round(max_datapoints_by_period / combinations * 100, 2)
+    result["density_ex_geo"] = round(max_datapoints_by_period_and_geo / combinations_ex_geo * 100, 2)
+
+    latest_time_period = dataset.data.TIME_PERIOD.unique().max()
+    selected_geo = dataset.data[geo].unique().max()
+    filtered_df = dataset.data[(dataset.data['TIME_PERIOD'] == latest_time_period) & (dataset.data[geo] == selected_geo)]
+    
+    possible_combinations = itertools.product(*dimension_values.values())
+    non_existing_combinations = []
+    for combination in possible_combinations:
+        comb_dict={}
+        for index in range(len(combination)):
+            
+            value = combination[index]
+            key = list(dimension_values.keys())[index]
+            comb_dict[key] = value
+
+        existing_combs = len(filtered_df.loc[(filtered_df[list(comb_dict)] == pd.Series(comb_dict)).all(axis=1)])
+        if existing_combs == 0:
+            non_existing_combinations.append(comb_dict)
+
+
+    
+    result["latest_time_period"] = str(latest_time_period)
+    result["selected_geo"] = str(selected_geo)
+    result["non_existing_combinations"] = non_existing_combinations
+
+    return result
