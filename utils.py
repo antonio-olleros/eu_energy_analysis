@@ -253,13 +253,14 @@ def check_density(dataset, geo="geo"):
     datapoints_by_period_and_geo = dataset.data.groupby(["TIME_PERIOD", geo])["OBS_VALUE"].size()
     max_datapoints_by_period_and_geo = int(datapoints_by_period_and_geo.max())
 
+
     result["max_datapoints_by_period"] = max_datapoints_by_period
     result["max_datapoints_by_period_and_geo"] = max_datapoints_by_period_and_geo
     result["density"] = round(max_datapoints_by_period / combinations * 100, 2)
     result["density_ex_geo"] = round(max_datapoints_by_period_and_geo / combinations_ex_geo * 100, 2)
 
     latest_time_period = dataset.data.TIME_PERIOD.unique().max()
-    selected_geo = dataset.data[geo].unique().max()
+    selected_geo = dataset.data[geo].unique().min()
     filtered_df = dataset.data[(dataset.data['TIME_PERIOD'] == latest_time_period) & (dataset.data[geo] == selected_geo)]
     
     possible_combinations = itertools.product(*dimension_values.values())
